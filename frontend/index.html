@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iGaming News Aggregator</title>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-white text-black antialiased">
+    <!-- Main App Container -->
+    <div x-data="newsApp()" x-init="init()" class="min-h-screen flex flex-col">
+
+        <!-- Sticky Header -->
+        <header class="sticky top-0 z-50 bg-white border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-6 py-6">
+                <!-- Title Row -->
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight">iGaming News</h1>
+                        <p class="text-sm text-gray-500 mt-1" x-text="new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })"></p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold" x-text="totalArticles"></div>
+                        <div class="text-xs text-gray-500 uppercase tracking-wide">Articles</div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3 mb-4">
+                    <button
+                        @click="fetchNews()"
+                        :disabled="loadingFetch"
+                        class="px-4 py-2 text-sm font-medium border border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        <span x-text="loadingFetch ? 'Fetching...' : 'Fetch Latest'"></span>
+                    </button>
+
+                    <button
+                        @click="generateSummaries()"
+                        :disabled="loadingSummaries"
+                        class="px-4 py-2 text-sm font-medium border border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        <span x-text="loadingSummaries ? 'Generating...' : 'Generate Summaries'"></span>
+                    </button>
+
+                    <button
+                        @click="createDigest()"
+                        :disabled="loadingDigest"
+                        class="px-4 py-2 text-sm font-medium border border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        <span x-text="loadingDigest ? 'Creating...' : 'Create Digest'"></span>
+                    </button>
+
+                    <button
+                        onclick="fetch('/api/debug/stats').then(r=>r.json()).then(d=>alert(JSON.stringify(d, null, 2)))"
+                        class="px-4 py-2 text-sm font-medium border border-gray-400 hover:bg-gray-400 hover:text-white transition-colors"
+                    >
+                        Debug Stats
+                    </button>
+                </div>
+
+                <!-- Success Message -->
+                <div x-show="message" x-transition class="mb-4">
+                    <div
+                        :class="messageType === 'success' ? 'bg-gray-100 text-black' : 'bg-red-50 text-red-900'"
+                        class="px-4 py-3 text-sm border border-gray-200 flex justify-between items-center"
+                    >
+                        <span x-text="message"></span>
+                        <button @click="message = ''" class="text-lg font-bold ml-4">&times;</button>
+                    </div>
+                </div>
+
+                <!-- View Toggle -->
+                <div class="flex gap-2 border-b border-gray-200 -mb-px">
+                    <button
+                        @click="currentView = 'feed'"
+                        :class="currentView === 'feed' ? 'border-b-2 border-black font-semibold' : 'text-gray-500 hover:text-black'"
+                        class="px-4 py-2 text-sm transition-colors"
+                    >
+                        Feed
+                    </button>
+                    <button
+                        @click="currentView = 'digest'"
+                        :class="currentView === 'digest' ? 'border-b-2 border-black font-semibold' : 'text-gray-500 hover:text-black'"
+                        class="px-4 py-2 text-sm transition-colors"
+                    >
+                        Digest
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
+
+            <!-- FEED VIEW -->
+            <div x-show="currentView === 'feed'" x-transition>
+
+                <!-- Search Bar -->
+                <div class="mb-6">
+                    <div class="flex gap-3">
+                        <input
+                            type="text"
+                            x-model="searchQuery"
+                            @keyup.enter="performSearch()"
+                            placeholder="Search articles semantically..."
+                            class="flex-1 px-4 py-2 text-sm border border-gray-300 focus:outline-none focus:border-black transition-colors"
+                        />
+                        <button
+                            @click="performSearch()"
+                            :disabled="loadingSearch || !searchQuery.trim()"
+                            class="px-4 py-2 text-sm font-medium border border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <span x-text="loadingSearch ? 'Searching...' : 'Search'"></span>
+                        </button>
+                        <button
+                            x-show="isSearchActive"
+                            @click="clearSearch()"
+                            class="px-4 py-2 text-sm font-medium border border-gray-300 hover:border-black transition-colors"
+                        >
+                            Clear
+                        </button>
+                    </div>
+                    <!-- Search Results Info -->
+                    <div x-show="isSearchActive" class="mt-2 text-xs text-gray-500">
+                        <span x-text="searchResultsCount"></span> results found for "<span x-text="activeSearchQuery"></span>"
+                    </div>
+                </div>
+
+                <!-- Filter Dropdown -->
+                <div class="mb-8" x-show="!isSearchActive">
+                    <select
+                        x-model="selectedSource"
+                        @change="loadArticles()"
+                        class="px-4 py-2 text-sm border border-gray-300 focus:outline-none focus:border-black transition-colors"
+                    >
+                        <option value="">All Sources</option>
+                        <template x-for="source in sources" :key="source">
+                            <option :value="source" x-text="source"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="loadingArticles" class="text-center py-20">
+                    <div class="inline-block animate-pulse text-sm text-gray-400">Loading articles...</div>
+                </div>
+
+                <!-- Article Cards -->
+                <div x-show="!loadingArticles" class="space-y-6">
+                    <template x-for="article in articles" :key="article.id">
+                        <article class="border border-gray-200 p-6 hover:border-gray-400 transition-colors">
+                            <!-- Source & Date -->
+                            <div class="flex items-center gap-3 mb-3 text-xs text-gray-500 uppercase tracking-wide">
+                                <span x-text="article.source"></span>
+                                <span>•</span>
+                                <span x-text="formatDate(article.published_date)"></span>
+                                <span x-show="article.summary" class="text-black">• Summarized</span>
+                                <!-- Similarity Badge (only shown in search results) -->
+                                <span
+                                    x-show="isSearchActive && article.similarity_score"
+                                    :class="getSimilarityBadgeClass(article.similarity_score)"
+                                    class="px-2 py-1 rounded text-xs font-semibold"
+                                    x-text="formatSimilarityScore(article.similarity_score)">
+                                </span>
+                            </div>
+
+                            <!-- Title -->
+                            <h2 class="text-xl font-semibold mb-3 leading-tight" x-text="article.title"></h2>
+
+                            <!-- Summary/Content -->
+                            <p class="text-gray-700 text-sm leading-relaxed mb-4 line-clamp-3 whitespace-normal break-words" x-html="formatMarkdown(article.summary || article.content || 'No content available')"></p>
+
+                            <!-- Read Link -->
+                            <a
+                                :href="article.link"
+                                target="_blank"
+                                class="inline-block text-sm font-medium hover:underline"
+                            >
+                                Read article →
+                            </a>
+                        </article>
+                    </template>
+
+                    <!-- Empty State -->
+                    <div x-show="articles.length === 0" class="text-center py-20">
+                        <p class="text-gray-400 text-sm">No articles found.</p>
+                        <p class="text-gray-400 text-xs mt-2">Click "Fetch Latest" to get started.</p>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <div x-show="!loadingArticles && articles.length > 0" class="mt-8 flex justify-between items-center text-sm">
+                    <button
+                        @click="previousPage()"
+                        :disabled="offset === 0"
+                        class="px-4 py-2 border border-gray-300 hover:border-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        Previous
+                    </button>
+                    <span class="text-gray-500">
+                        <span x-text="offset + 1"></span>-<span x-text="Math.min(offset + limit, totalArticles)"></span> of <span x-text="totalArticles"></span>
+                    </span>
+                    <button
+                        @click="nextPage()"
+                        :disabled="offset + limit >= totalArticles"
+                        class="px-4 py-2 border border-gray-300 hover:border-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            <!-- DIGEST VIEW -->
+            <div x-show="currentView === 'digest'" x-transition>
+
+                <!-- Loading State -->
+                <div x-show="loadingDigest && !digest" class="text-center py-20">
+                    <div class="inline-block animate-pulse text-sm text-gray-400">Creating digest...</div>
+                </div>
+
+                <!-- No Digest State -->
+                <div x-show="!digest && !loadingDigest" class="text-center py-20">
+                    <p class="text-gray-400 text-sm">No digest available yet.</p>
+                    <p class="text-gray-400 text-xs mt-2">Click "Create Digest" to generate one.</p>
+                </div>
+
+                <!-- Digest Content -->
+                <div x-show="digest" class="max-w-4xl">
+
+                    <!-- Breaking News Banner -->
+                    <div class="bg-black text-white px-6 py-4 mb-8">
+                        <div class="text-xs uppercase tracking-wide mb-1">Daily Digest</div>
+                        <div class="text-sm">
+                            <span x-text="digestArticleCount"></span> articles • <span x-text="digestDate"></span>
+                        </div>
+                    </div>
+
+                    <!-- Digest Sections with Category Colors -->
+                    <div class="prose prose-sm max-w-none">
+                        <div class="digest-content space-y-8" x-html="formatDigestWithCategories(digest)"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="border-t border-gray-200 mt-12">
+            <div class="max-w-7xl mx-auto px-6 py-6 text-center text-xs text-gray-400">
+                <p>Powered by Claude AI • iGaming News Aggregator © 2025</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Include Alpine.js app logic -->
+    <script src="static/app.js"></script>
+</body>
+</html>
