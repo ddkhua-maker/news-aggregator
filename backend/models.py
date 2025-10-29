@@ -21,7 +21,7 @@ class Article(Base):
     published_date = Column(DateTime, nullable=True, index=True)
     content = Column(Text, nullable=True)  # Original article content/description
     summary = Column(Text, nullable=True)  # AI-generated summary
-    embedding = Column(JSON, nullable=True, index=True)  # Vector embedding for semantic search
+    embedding = Column(JSON, nullable=True)  # Vector embedding for semantic search (no index - PostgreSQL limitation)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
