@@ -23,6 +23,9 @@ EMBEDDING_MODEL = "text-embedding-3-small"  # Model for semantic search
 
 # Database
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./news_aggregator.db")
+# Railway PostgreSQL URL fix (postgres:// -> postgresql://)
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 # RSS Feed Sources (iGaming news sites)
 RSS_FEEDS = [

@@ -95,44 +95,13 @@ async def startup_event():
 
 
 @app.get("/")
-async def root():
-    """
-    Root endpoint - health check for Railway
-    Returns simple JSON status for Railway health checks
-    """
-    return {
-        "status": "healthy",
-        "message": "iGaming News Aggregator API",
-        "version": "1.0.0",
-        "docs": "/docs"
-    }
+async def health_check():
+    return {"status": "healthy", "service": "iGaming News Aggregator"}
 
 
 @app.get("/health")
-async def health_check(db: Session = Depends(get_db)):
-    """
-    Health check endpoint for load balancers and monitoring
-    """
-    try:
-        # Check database connectivity
-        from sqlalchemy import text
-        db.execute(text("SELECT 1"))
-
-        return {
-            "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
-            "environment": os.getenv("ENVIRONMENT", "development")
-        }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        return JSONResponse(
-            status_code=503,
-            content={
-                "status": "unhealthy",
-                "reason": "Database connection failed",
-                "timestamp": datetime.utcnow().isoformat()
-            }
-        )
+async def health():
+    return {"status": "ok"}
 
 
 @app.get("/api/articles")
