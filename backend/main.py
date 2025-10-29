@@ -97,18 +97,15 @@ async def startup_event():
 @app.get("/")
 async def root():
     """
-    Root endpoint - serve the frontend HTML file
+    Root endpoint - health check for Railway
+    Returns simple JSON status for Railway health checks
     """
-    index_path = os.path.join(FRONTEND_DIR, "index.html")
-    if os.path.exists(index_path):
-        return FileResponse(index_path)
-    else:
-        return {
-            "message": "iGaming News Aggregator API",
-            "status": "running",
-            "version": "1.0.0",
-            "docs": "/docs"
-        }
+    return {
+        "status": "healthy",
+        "message": "iGaming News Aggregator API",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
 
 
 @app.get("/health")
