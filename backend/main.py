@@ -88,13 +88,23 @@ async def startup_event():
 
 
 @app.get("/")
-async def health_check():
-    return {"status": "healthy", "service": "iGaming News Aggregator"}
+async def read_root():
+    """
+    Serve the frontend index.html at root
+    """
+    index_path = os.path.join(FRONTEND_DIR, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    # Fallback to API health check if frontend not found
+    return {"status": "healthy", "service": "iGaming News Aggregator", "note": "Frontend not found"}
 
 
 @app.get("/health")
-async def health():
-    return {"status": "ok"}
+async def health_check():
+    """
+    Health check endpoint for monitoring
+    """
+    return {"status": "healthy", "service": "iGaming News Aggregator"}
 
 
 @app.get("/api/articles")
