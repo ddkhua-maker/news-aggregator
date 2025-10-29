@@ -5,7 +5,9 @@ Contains RSS feed sources and application settings
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Load .env only in development (Railway provides env vars directly)
+if os.getenv("ENVIRONMENT") != "production":
+    load_dotenv()
 
 # Environment
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")  # development, staging, production
@@ -15,17 +17,13 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 # Validate critical configuration
 if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY must be set in .env file")
+    raise ValueError("OPENAI_API_KEY environment variable must be set")
 
 # OpenAI Models
 OPENAI_MODEL = "gpt-4o-mini"  # Model for article summaries
 EMBEDDING_MODEL = "text-embedding-3-small"  # Model for semantic search
 
-# Database
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./news_aggregator.db")
-# Railway PostgreSQL URL fix (postgres:// -> postgresql://)
-if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+# Note: DATABASE_URL is handled in database.py with proper Railway PostgreSQL URL conversion
 
 # RSS Feed Sources (iGaming news sites)
 RSS_FEEDS = [
@@ -42,10 +40,10 @@ RSS_FEEDS = [
     "https://slotbeats.com/feed/"
 ]
 
-# Application Settings
-FETCH_INTERVAL_MINUTES = 30  # How often to fetch RSS feeds
-MAX_ARTICLES_PER_FEED = 10   # Maximum articles to fetch per feed
-SUMMARY_MAX_TOKENS = 500     # Maximum tokens for OpenAI API summaries
+# Application Settings (read from environment with defaults)
+FETCH_INTERVAL_MINUTES = int(os.getenv("FETCH_INTERVAL_MINUTES", "30"))  # How often to fetch RSS feeds
+MAX_ARTICLES_PER_FEED = int(os.getenv("MAX_ARTICLES_PER_FEED", "10"))   # Maximum articles to fetch per feed
+SUMMARY_MAX_TOKENS = int(os.getenv("SUMMARY_MAX_TOKENS", "500"))     # Maximum tokens for OpenAI API summaries
 
 # CORS Settings - Environment-based
 if ENVIRONMENT == "production":

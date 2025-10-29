@@ -18,20 +18,13 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-try:
-    from .database import get_db, init_db
-    from .config import CORS_ORIGINS, RSS_FEEDS, DEBUG_MODE
-    from .models import Article, DigestEntry
-    from .rss_parser import parse_all_feeds, save_articles_to_db, extract_source_name
-    from .openai_summarizer import process_new_articles, create_daily_digest
-    from .search import semantic_search
-except ImportError:
-    from database import get_db, init_db
-    from config import CORS_ORIGINS, RSS_FEEDS, DEBUG_MODE
-    from models import Article, DigestEntry
-    from rss_parser import parse_all_feeds, save_articles_to_db, extract_source_name
-    from openai_summarizer import process_new_articles, create_daily_digest
-    from search import semantic_search
+# Absolute imports (required for Railway deployment)
+from database import get_db, init_db
+from config import CORS_ORIGINS, RSS_FEEDS, DEBUG_MODE
+from models import Article, DigestEntry
+from rss_parser import parse_all_feeds, save_articles_to_db, extract_source_name
+from openai_summarizer import process_new_articles, create_daily_digest
+from search import semantic_search
 
 # Configure logging
 logging.basicConfig(

@@ -7,14 +7,29 @@ from sqlalchemy.orm import sessionmaker, Session
 import os
 import logging
 
-try:
-    from .models import Base
-    from .config import DATABASE_URL
-except ImportError:
-    from models import Base
-    from config import DATABASE_URL
+# Absolute imports (required for Railway deployment)
+from models import Base
 
 logger = logging.getLogger(__name__)
+
+
+def get_database_url():
+    """
+    Get DATABASE_URL from environment and fix Railway PostgreSQL format
+    Railway provides postgres:// but SQLAlchemy requires postgresql://
+    """
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        # Fix Railway PostgreSQL URL format
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+            logger.info("Converted Railway PostgreSQL URL format")
+        return database_url
+    # Default to SQLite for development
+    return "sqlite:///./news_aggregator.db"
+
+
+DATABASE_URL = get_database_url()
 
 # Determine database type from DATABASE_URL
 is_sqlite = "sqlite" in DATABASE_URL
