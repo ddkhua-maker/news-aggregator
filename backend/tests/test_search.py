@@ -10,10 +10,13 @@ This module tests the semantic search functionality including:
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 import numpy as np
+import sys
+import os
+
+# Add backend directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Import functions to test
-import sys
-sys.path.insert(0, '../')
 from search import cosine_similarity, semantic_search
 
 

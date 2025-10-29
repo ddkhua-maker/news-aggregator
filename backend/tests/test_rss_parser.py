@@ -10,10 +10,13 @@ This module tests the RSS feed parsing functionality including:
 import pytest
 from unittest.mock import Mock, patch
 from datetime import datetime
+import sys
+import os
+
+# Add backend directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 # Import functions to test
-import sys
-sys.path.insert(0, '../')
 from rss_parser import clean_html, extract_source_name, parse_single_feed
 
 
