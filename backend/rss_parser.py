@@ -237,6 +237,10 @@ def save_articles_to_db(articles: List[Dict], db_session: Session) -> int:
     """
     Save parsed articles to database, avoiding duplicates
 
+    Uses hybrid approach:
+    1. In-memory deduplication to remove cross-feed duplicates
+    2. Individual commits to prevent cascading failures
+
     Args:
         articles: List of article dictionaries from parser
         db_session: Database session
@@ -248,15 +252,31 @@ def save_articles_to_db(articles: List[Dict], db_session: Session) -> int:
 
     logger.info(f"Attempting to save {len(articles)} articles to database")
 
+    # STEP 1: Deduplicate within batch (prevents cross-feed duplicates)
+    seen_links = set()
+    unique_articles = []
     for article_data in articles:
+        link = article_data["link"]
+        if link not in seen_links:
+            seen_links.add(link)
+            unique_articles.append(article_data)
+        else:
+            logger.debug(f"Skipping duplicate within batch: {article_data['title'][:50]}...")
+
+    duplicates_in_batch = len(articles) - len(unique_articles)
+    if duplicates_in_batch > 0:
+        logger.info(f"Removed {duplicates_in_batch} duplicate links within batch")
+
+    # STEP 2: Save articles with individual commits
+    for article_data in unique_articles:
         try:
-            # Check if article already exists by link
+            # Check if article already exists in database
             existing_article = db_session.query(Article).filter(
                 Article.link == article_data["link"]
             ).first()
 
             if existing_article:
-                logger.debug(f"Article already exists: {article_data['title'][:50]}...")
+                logger.debug(f"Article already exists in DB: {article_data['title'][:50]}...")
                 continue
 
             # Create new article
@@ -269,26 +289,19 @@ def save_articles_to_db(articles: List[Dict], db_session: Session) -> int:
             )
 
             db_session.add(new_article)
+            db_session.commit()  # Commit immediately after each article
             new_articles_count += 1
-            logger.debug(f"Added new article: {article_data['title'][:50]}...")
+            logger.debug(f"Saved new article: {article_data['title'][:50]}...")
 
         except IntegrityError as e:
-            # Handle unique constraint violations
+            # Handle unique constraint violations (now properly caught)
             db_session.rollback()
-            logger.warning(f"Duplicate article detected (link constraint): {article_data.get('link', 'unknown')}")
+            logger.warning(f"Duplicate article (DB constraint): {article_data.get('link', 'unknown')}")
             continue
         except Exception as e:
             db_session.rollback()
             logger.error(f"Error saving article '{article_data.get('title', 'unknown')}': {e}")
             continue
 
-    # Commit all new articles
-    try:
-        db_session.commit()
-        logger.info(f"Successfully saved {new_articles_count} new articles to database")
-    except Exception as e:
-        db_session.rollback()
-        logger.error(f"Error committing articles to database: {e}")
-        return 0
-
+    logger.info(f"Successfully saved {new_articles_count} new articles to database")
     return new_articles_count
