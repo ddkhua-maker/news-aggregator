@@ -43,7 +43,7 @@ RSS_FEEDS = [
 # Application Settings (read from environment with defaults)
 FETCH_INTERVAL_MINUTES = int(os.getenv("FETCH_INTERVAL_MINUTES", "30"))  # How often to fetch RSS feeds
 MAX_ARTICLES_PER_FEED = int(os.getenv("MAX_ARTICLES_PER_FEED", "10"))   # Maximum articles to fetch per feed
-SUMMARY_MAX_TOKENS = int(os.getenv("SUMMARY_MAX_TOKENS", "500"))     # Maximum tokens for OpenAI API summaries
+SUMMARY_MAX_TOKENS = int(os.getenv("SUMMARY_MAX_TOKENS", "150"))     # Maximum tokens for OpenAI API summaries (2-3 sentences)
 
 # CORS Settings - Environment-based
 if ENVIRONMENT == "production":

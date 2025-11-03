@@ -56,7 +56,7 @@ ENVIRONMENT=production
 ```
 MAX_ARTICLES_PER_FEED=10
 FETCH_INTERVAL_MINUTES=30
-SUMMARY_MAX_TOKENS=500
+SUMMARY_MAX_TOKENS=150
 ```
 
 **FOR CORS (if you have a frontend):**
@@ -338,7 +338,7 @@ CORS_ORIGINS=https://your-frontend.com,https://www.your-frontend.com
 | `ENVIRONMENT` | ❌ No | `development` | Set to `production` |
 | `MAX_ARTICLES_PER_FEED` | ❌ No | `10` | Articles to fetch per RSS feed |
 | `FETCH_INTERVAL_MINUTES` | ❌ No | `30` | How often to fetch news |
-| `SUMMARY_MAX_TOKENS` | ❌ No | `500` | Max tokens for AI summaries |
+| `SUMMARY_MAX_TOKENS` | ❌ No | `150` | Max tokens for AI summaries (2-3 sentences) |
 | `CORS_ORIGINS` | ❌ No | `localhost` | Comma-separated frontend URLs |
 
 ---

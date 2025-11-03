@@ -47,15 +47,15 @@ def summarize_single_article(title: str, content: str) -> str:
         logger.info(f"Generating summary for article: {title[:50]}...")
 
         # Create prompt for OpenAI
-        prompt = f"""Summarize this iGaming news article in 2-3 clear sentences. Focus on key facts.
+        prompt = f"""Summarize this iGaming news article in EXACTLY 2-3 SHORT sentences.
+Extract only the most important facts:
+- Who is involved (company/person names)
+- What happened (main event/announcement)
+- Why it matters (impact/significance)
 
-Use simple formatting:
-- Use **bold** for company names or important terms
-- Keep it concise and readable
-- No HTML tags
+Be concise and factual. No fluff. Use **bold** for company names.
 
-Article: {title}
-
+Article title: {title}
 Content: {content}"""
 
         # Call OpenAI API
