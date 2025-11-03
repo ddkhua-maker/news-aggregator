@@ -170,6 +170,7 @@ def create_daily_digest(articles: List[Article]) -> str:
         formatted_articles = []
         for i, article in enumerate(articles, 1):
             article_text = f"{i}. **{article.title}** (Source: {article.source})\n"
+            article_text += f"   Link: {article.link}\n"
             if article.summary:
                 article_text += f"   Summary: {article.summary}\n"
             elif article.content:
@@ -181,6 +182,8 @@ def create_daily_digest(articles: List[Article]) -> str:
 
         # Create prompt for OpenAI
         prompt = f"""You are an iGaming industry analyst. Create a professional daily digest from these news articles. Group by topics (regulations, mergers, product launches, etc). Highlight the most important developments. Keep it concise but informative.
+
+IMPORTANT: For each article mentioned in the digest, include its source link in markdown format: [Article Title](link)
 
 Articles:
 {articles_text}"""
