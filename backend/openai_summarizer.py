@@ -203,8 +203,15 @@ Articles:
         # Extract digest from response
         digest = response.choices[0].message.content
 
+        # Append source links section to ensure links are always included
+        sources_section = "\n\n---\n\n## 📰 Source Articles\n\n"
+        for i, article in enumerate(articles, 1):
+            sources_section += f"{i}. [{article.title}]({article.link}) - *{article.source}*\n"
+
+        digest_with_sources = digest + sources_section
+
         logger.info(f"Successfully created daily digest with {len(articles)} articles")
-        return digest
+        return digest_with_sources
 
     except RateLimitError as e:
         logger.error(f"Rate limit exceeded: {e}")

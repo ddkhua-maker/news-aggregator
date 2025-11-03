@@ -412,6 +412,61 @@ async def get_digest(request: Request, digest_date: str, db: Session = Depends(g
         )
 
 
+@app.delete("/api/digest/{digest_date}")
+@limiter.limit("10/hour")  # Rate limit: 10 requests per hour
+async def delete_digest(request: Request, digest_date: str, db: Session = Depends(get_db)):
+    """
+    Delete digest for a specific date (allows regeneration)
+
+    Args:
+        digest_date: Date in YYYY-MM-DD format
+        db: Database session
+
+    Returns:
+        JSON with status message
+    """
+    try:
+        # Parse date with validation
+        try:
+            target_date = datetime.strptime(digest_date, "%Y-%m-%d").date()
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid date format. Use YYYY-MM-DD"
+            )
+
+        # Find and delete digest
+        digest = db.query(DigestEntry).filter(
+            DigestEntry.digest_date == target_date
+        ).first()
+
+        if not digest:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No digest found for {digest_date}"
+            )
+
+        db.delete(digest)
+        db.commit()
+
+        logger.info(f"Deleted digest for {digest_date}")
+
+        return {
+            "status": "success",
+            "message": f"Digest for {digest_date} deleted successfully. You can now recreate it."
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting digest: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete digest"
+        )
+
+
 @app.get("/api/sources")
 @limiter.limit("60/hour")  # Rate limit: 60 requests per hour
 async def get_sources(request: Request):
