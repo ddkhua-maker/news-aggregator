@@ -169,24 +169,39 @@ def create_daily_digest(articles: List[Article]) -> str:
         # Format articles for the prompt
         formatted_articles = []
         for i, article in enumerate(articles, 1):
-            article_text = f"{i}. **{article.title}** (Source: {article.source})\n"
-            article_text += f"   Link: {article.link}\n"
-            if article.summary:
-                article_text += f"   Summary: {article.summary}\n"
-            elif article.content:
-                # Use first 500 chars of content if no summary
-                article_text += f"   Content: {article.content[:500]}...\n"
+            article_text = f"""
+Title: {article.title}
+Source: {article.source}
+Link: {article.link}
+Summary: {article.summary or article.content[:200] if article.content else 'No content available'}
+"""
             formatted_articles.append(article_text)
 
         articles_text = "\n".join(formatted_articles)
 
         # Create prompt for OpenAI
-        prompt = f"""You are an iGaming industry analyst. Create a professional daily digest from these news articles. Group by topics (regulations, mergers, product launches, etc). Highlight the most important developments. Keep it concise but informative.
+        prompt = f"""You are an iGaming industry analyst. Create a professional daily digest from these news articles.
 
-IMPORTANT: For each article mentioned in the digest, include its source link in markdown format: [Article Title](link)
+For EACH article you discuss:
+1. Write the title in **bold**
+2. Add a brief 1-2 sentence summary
+3. IMMEDIATELY after the summary, add a new line with: [Read original →](article-link)
 
-Articles:
-{articles_text}"""
+Group articles by topics (regulations, M&A, product launches, markets, technology).
+
+Format example:
+**Article Title Here**
+Brief 1-2 sentence summary of the article content and key points.
+[Read original →](https://example.com/article)
+
+**Another Article Title**
+Another brief summary here.
+[Read original →](https://example.com/article2)
+
+Articles to include:
+{articles_text}
+
+Remember: ALWAYS include the [Read original →](link) after EACH article summary."""
 
         # Call OpenAI API
         response = client.chat.completions.create(

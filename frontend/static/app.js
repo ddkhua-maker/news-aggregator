@@ -339,8 +339,10 @@ function newsApp() {
                     .replace(/## (.*?)(\n|$)/g, '<h2 class="text-xl font-bold mb-3 text-black">$1</h2>')
                     // H3 headers
                     .replace(/### (.*?)(\n|$)/g, '<h3 class="text-base font-semibold mt-3 mb-2 text-gray-800">$1</h3>')
-                    // Bold text
+                    // Bold text (do this before links to avoid breaking link syntax)
                     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
+                    // Markdown links - convert to HTML with styling
+                    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1">$1 <span class="text-xs">→</span></a>')
                     // Bullet points
                     .replace(/^- (.*?)$/gm, '<li class="ml-4">$1</li>')
                     // Paragraphs
