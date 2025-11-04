@@ -14,6 +14,14 @@ function newsApp() {
         searchTerm: '',
         selectedCategory: 'all',
 
+        // State - View
+        currentView: 'feed', // 'feed' or 'digest'
+
+        // State - Digest
+        digest: '',
+        digestDate: '',
+        digestArticleCount: 0,
+
         // State - Modal
         selectedArticle: null,
 
@@ -169,25 +177,44 @@ function newsApp() {
         },
 
         /**
-         * Fetch latest news from RSS feeds
+         * Fetch latest news from RSS feeds and auto-generate summaries
          */
         async fetchNews() {
             this.loadingFetch = true;
             try {
-                const response = await fetch(`${this.apiUrl}/fetch-news`, {
+                // Step 1: Fetch news
+                const fetchResponse = await fetch(`${this.apiUrl}/fetch-news`, {
                     method: 'POST'
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                if (!fetchResponse.ok) {
+                    throw new Error(`HTTP ${fetchResponse.status}`);
                 }
 
-                const data = await response.json();
+                const fetchData = await fetchResponse.json();
+                const newArticles = fetchData.new_articles;
 
-                this.showMessage(
-                    `Successfully fetched ${data.new_articles} new articles!`,
-                    'success'
-                );
+                if (newArticles > 0) {
+                    // Step 2: Auto-generate summaries for new articles
+                    const summaryResponse = await fetch(`${this.apiUrl}/generate-summaries`, {
+                        method: 'POST'
+                    });
+
+                    if (summaryResponse.ok) {
+                        const summaryData = await summaryResponse.json();
+                        this.showMessage(
+                            `Fetched ${newArticles} new articles and generated ${summaryData.summaries_generated} summaries!`,
+                            'success'
+                        );
+                    } else {
+                        this.showMessage(
+                            `Fetched ${newArticles} new articles (summaries generation failed)`,
+                            'success'
+                        );
+                    }
+                } else {
+                    this.showMessage('No new articles found', 'success');
+                }
 
                 // Reload articles
                 await this.loadArticles();
@@ -200,33 +227,34 @@ function newsApp() {
         },
 
         /**
-         * Generate summaries for articles
+         * Load digest from API
          */
-        async generateSummaries() {
-            this.loadingSummaries = true;
+        async loadDigest() {
+            if (this.digest) return; // Already loaded
+
+            this.loadingDigest = true;
             try {
-                const response = await fetch(`${this.apiUrl}/generate-summaries`, {
-                    method: 'POST'
-                });
+                const today = new Date().toISOString().split('T')[0];
+                const response = await fetch(`${this.apiUrl}/digest/${today}`);
 
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
+                    // No digest for today
+                    this.digest = '';
+                    this.loadingDigest = false;
+                    return;
                 }
 
                 const data = await response.json();
+                this.digest = data.digest.content;
+                this.digestDate = this.formatDigestDate(data.digest.digest_date);
+                this.digestArticleCount = data.digest.article_count;
 
-                this.showMessage(
-                    `Successfully generated ${data.summaries_generated} summaries!`,
-                    'success'
-                );
-
-                // Reload articles to show updated summaries
-                await this.loadArticles();
+                console.log('Digest loaded successfully');
             } catch (error) {
-                console.error('Error generating summaries:', error);
-                this.showMessage('Failed to generate summaries: ' + error.message, 'error');
+                console.error('Error loading digest:', error);
+                this.digest = '';
             } finally {
-                this.loadingSummaries = false;
+                this.loadingDigest = false;
             }
         },
 
@@ -246,6 +274,14 @@ function newsApp() {
                 }
 
                 const data = await response.json();
+
+                // Update digest state
+                this.digest = data.digest;
+                this.digestDate = this.formatDigestDate(data.digest_date);
+                this.digestArticleCount = data.article_count;
+
+                // Switch to digest view
+                this.currentView = 'digest';
 
                 this.showMessage(`Daily digest created with ${data.article_count} articles!`, 'success');
             } catch (error) {
@@ -323,6 +359,46 @@ function newsApp() {
             } catch (error) {
                 return 'Invalid date';
             }
+        },
+
+        /**
+         * Format digest date
+         */
+        formatDigestDate(dateString) {
+            if (!dateString) return '';
+
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            } catch (error) {
+                return dateString;
+            }
+        },
+
+        /**
+         * Format digest content (convert markdown to HTML with links)
+         */
+        formatDigestContent(content) {
+            if (!content) return '';
+
+            let formatted = content
+                // Headers
+                .replace(/## (.*?)(\n|$)/g, '<h2 class="text-2xl font-bold mt-6 mb-4 text-gray-900">$1</h2>')
+                .replace(/### (.*?)(\n|$)/g, '<h3 class="text-lg font-semibold mt-4 mb-2 text-gray-800">$1</h3>')
+                // Bold text
+                .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+                // Markdown links with styling
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1">$1 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg></a>')
+                // Paragraphs
+                .replace(/\n\n/g, '</p><p class="mb-4 text-gray-700 leading-relaxed">')
+                .replace(/\n/g, '<br>');
+
+            return '<p class="mb-4 text-gray-700 leading-relaxed">' + formatted + '</p>';
         }
     };
 }
