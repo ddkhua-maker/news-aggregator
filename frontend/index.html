@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>iGaming News Aggregator</title>
+    <title>iGaming News Digest</title>
 
     <!-- Google Fonts - Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -31,253 +31,347 @@
         body {
             font-family: 'Inter', system-ui, sans-serif;
         }
+
+        .card-hover {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .card-hover:hover {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .breaking-card {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+        }
+
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
     </style>
 </head>
-<body class="bg-white text-black antialiased">
-    <!-- Main App Container -->
-    <div x-data="newsApp()" x-init="init()" class="min-h-screen flex flex-col">
+<body class="bg-gray-50" x-data="newsApp()" x-init="init()">
 
-        <!-- Sticky Header -->
-        <header class="sticky top-0 z-50 bg-white border-b border-gray-200">
-            <div class="max-w-7xl mx-auto px-6 py-6">
-                <!-- Title Row -->
-                <div class="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 class="text-3xl font-bold tracking-tight">iGaming News</h1>
-                        <p class="text-sm text-gray-500 mt-1" x-text="new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })"></p>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-2xl font-bold" x-text="totalArticles"></div>
-                        <div class="text-xs text-gray-500 uppercase tracking-wide">Articles</div>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex gap-3 mb-4">
-                    <button
-                        @click="fetchNews()"
-                        :disabled="loadingFetch"
-                        class="px-4 py-2 text-sm font-medium border border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                        <span x-text="loadingFetch ? 'Fetching...' : 'Fetch Latest'"></span>
-                    </button>
-
-                    <button
-                        @click="generateSummaries()"
-                        :disabled="loadingSummaries"
-                        class="px-4 py-2 text-sm font-medium border border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                        <span x-text="loadingSummaries ? 'Generating...' : 'Generate Summaries'"></span>
-                    </button>
-
-                    <button
-                        @click="createDigest()"
-                        :disabled="loadingDigest"
-                        class="px-4 py-2 text-sm font-medium border border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                        <span x-text="loadingDigest ? 'Creating...' : 'Create Digest'"></span>
-                    </button>
-
-                    <button
-                        onclick="fetch('/api/debug/stats').then(r=>r.json()).then(d=>alert(JSON.stringify(d, null, 2)))"
-                        class="px-4 py-2 text-sm font-medium border border-gray-400 hover:bg-gray-400 hover:text-white transition-colors"
-                    >
-                        Debug Stats
-                    </button>
-                </div>
-
-                <!-- Success Message -->
-                <div x-show="message" x-transition class="mb-4">
-                    <div
-                        :class="messageType === 'success' ? 'bg-gray-100 text-black' : 'bg-red-50 text-red-900'"
-                        class="px-4 py-3 text-sm border border-gray-200 flex justify-between items-center"
-                    >
-                        <span x-text="message"></span>
-                        <button @click="message = ''" class="text-lg font-bold ml-4">&times;</button>
-                    </div>
-                </div>
-
-                <!-- View Toggle -->
-                <div class="flex gap-2 border-b border-gray-200 -mb-px">
-                    <button
-                        @click="currentView = 'feed'"
-                        :class="currentView === 'feed' ? 'border-b-2 border-black font-semibold' : 'text-gray-500 hover:text-black'"
-                        class="px-4 py-2 text-sm transition-colors"
-                    >
-                        Feed
-                    </button>
-                    <button
-                        @click="currentView = 'digest'"
-                        :class="currentView === 'digest' ? 'border-b-2 border-black font-semibold' : 'text-gray-500 hover:text-black'"
-                        class="px-4 py-2 text-sm transition-colors"
-                    >
-                        Digest
-                    </button>
+    <!-- Header (Sticky) -->
+    <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <!-- Title -->
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-3xl font-bold text-gray-900">iGaming News Digest</h1>
+                <div class="text-right">
+                    <div class="text-2xl font-bold text-blue-600" x-text="totalArticles"></div>
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Articles</div>
                 </div>
             </div>
-        </header>
 
-        <!-- Main Content -->
-        <main class="flex-1 max-w-7xl mx-auto w-full px-6 py-8">
-
-            <!-- FEED VIEW -->
-            <div x-show="currentView === 'feed'" x-transition>
-
-                <!-- Search Bar -->
-                <div class="mb-6">
-                    <div class="flex gap-3">
-                        <input
-                            type="text"
-                            x-model="searchQuery"
-                            @keyup.enter="performSearch()"
-                            placeholder="Search articles semantically..."
-                            class="flex-1 px-4 py-2 text-sm border border-gray-300 focus:outline-none focus:border-black transition-colors"
-                        />
-                        <button
-                            @click="performSearch()"
-                            :disabled="loadingSearch || !searchQuery.trim()"
-                            class="px-4 py-2 text-sm font-medium border border-black hover:bg-black hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                        >
-                            <span x-text="loadingSearch ? 'Searching...' : 'Search'"></span>
-                        </button>
-                        <button
-                            x-show="isSearchActive"
-                            @click="clearSearch()"
-                            class="px-4 py-2 text-sm font-medium border border-gray-300 hover:border-black transition-colors"
-                        >
-                            Clear
-                        </button>
-                    </div>
-                    <!-- Search Results Info -->
-                    <div x-show="isSearchActive" class="mt-2 text-xs text-gray-500">
-                        <span x-text="searchResultsCount"></span> results found for "<span x-text="activeSearchQuery"></span>"
-                    </div>
-                </div>
-
-                <!-- Filter Dropdown -->
-                <div class="mb-8" x-show="!isSearchActive">
-                    <select
-                        x-model="selectedSource"
-                        @change="loadArticles()"
-                        class="px-4 py-2 text-sm border border-gray-300 focus:outline-none focus:border-black transition-colors"
-                    >
-                        <option value="">All Sources</option>
-                        <template x-for="source in sources" :key="source">
-                            <option :value="source" x-text="source"></option>
-                        </template>
-                    </select>
-                </div>
-
-                <!-- Loading State -->
-                <div x-show="loadingArticles" class="text-center py-20">
-                    <div class="inline-block animate-pulse text-sm text-gray-400">Loading articles...</div>
-                </div>
-
-                <!-- Article Cards -->
-                <div x-show="!loadingArticles" class="space-y-6">
-                    <template x-for="article in articles" :key="article.id">
-                        <article class="border border-gray-200 p-6 hover:border-gray-400 transition-colors">
-                            <!-- Source & Date -->
-                            <div class="flex items-center gap-3 mb-3 text-xs text-gray-500 uppercase tracking-wide">
-                                <span x-text="article.source"></span>
-                                <span>•</span>
-                                <span x-text="formatDate(article.published_date)"></span>
-                                <span x-show="article.summary" class="text-black">• Summarized</span>
-                                <!-- Similarity Badge (only shown in search results) -->
-                                <span
-                                    x-show="isSearchActive && article.similarity_score"
-                                    :class="getSimilarityBadgeClass(article.similarity_score)"
-                                    class="px-2 py-1 rounded text-xs font-semibold"
-                                    x-text="formatSimilarityScore(article.similarity_score)">
-                                </span>
-                            </div>
-
-                            <!-- Title -->
-                            <h2 class="text-xl font-semibold mb-3 leading-tight" x-text="article.title"></h2>
-
-                            <!-- Summary/Content -->
-                            <p class="text-gray-700 text-sm leading-relaxed mb-4 line-clamp-3 whitespace-normal break-words" x-html="formatMarkdown(article.summary || article.content || 'No content available')"></p>
-
-                            <!-- Read Link -->
-                            <a
-                                :href="article.link"
-                                target="_blank"
-                                class="inline-block text-sm font-medium hover:underline"
-                            >
-                                Read article →
-                            </a>
-                        </article>
-                    </template>
-
-                    <!-- Empty State -->
-                    <div x-show="articles.length === 0" class="text-center py-20">
-                        <p class="text-gray-400 text-sm">No articles found.</p>
-                        <p class="text-gray-400 text-xs mt-2">Click "Fetch Latest" to get started.</p>
-                    </div>
-                </div>
-
-                <!-- Pagination -->
-                <div x-show="!loadingArticles && articles.length > 0" class="mt-8 flex justify-between items-center text-sm">
+            <!-- Search Bar -->
+            <div class="mb-4">
+                <div class="relative">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input
+                        type="text"
+                        x-model="searchTerm"
+                        @input="filterArticles()"
+                        placeholder="Search articles by title, content, or source..."
+                        class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                     <button
-                        @click="previousPage()"
-                        :disabled="offset === 0"
-                        class="px-4 py-2 border border-gray-300 hover:border-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                        x-show="searchTerm"
+                        @click="searchTerm = ''; filterArticles()"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                     >
-                        Previous
-                    </button>
-                    <span class="text-gray-500">
-                        <span x-text="offset + 1"></span>-<span x-text="Math.min(offset + limit, totalArticles)"></span> of <span x-text="totalArticles"></span>
-                    </span>
-                    <button
-                        @click="nextPage()"
-                        :disabled="offset + limit >= totalArticles"
-                        class="px-4 py-2 border border-gray-300 hover:border-black transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                    >
-                        Next
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
                     </button>
                 </div>
             </div>
 
-            <!-- DIGEST VIEW -->
-            <div x-show="currentView === 'digest'" x-transition>
+            <!-- Category Filters -->
+            <div class="flex gap-2 mb-4 overflow-x-auto pb-2">
+                <button
+                    @click="selectedCategory = 'all'; filterArticles()"
+                    :class="selectedCategory === 'all' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+                    class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
+                >
+                    All
+                </button>
+                <button
+                    @click="selectedCategory = 'regulation'; filterArticles()"
+                    :class="selectedCategory === 'regulation' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+                    class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
+                >
+                    Regulations
+                </button>
+                <button
+                    @click="selectedCategory = 'merger'; filterArticles()"
+                    :class="selectedCategory === 'merger' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+                    class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
+                >
+                    M&A
+                </button>
+                <button
+                    @click="selectedCategory = 'product'; filterArticles()"
+                    :class="selectedCategory === 'product' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+                    class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
+                >
+                    Products
+                </button>
+                <button
+                    @click="selectedCategory = 'market'; filterArticles()"
+                    :class="selectedCategory === 'market' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+                    class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
+                >
+                    Markets
+                </button>
+                <button
+                    @click="selectedCategory = 'breaking'; filterArticles()"
+                    :class="selectedCategory === 'breaking' ? 'bg-red-600 text-white' : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'"
+                    class="px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
+                >
+                    🔥 Breaking
+                </button>
+            </div>
 
-                <!-- Loading State -->
-                <div x-show="loadingDigest && !digest" class="text-center py-20">
-                    <div class="inline-block animate-pulse text-sm text-gray-400">Creating digest...</div>
+            <!-- Action Buttons -->
+            <div class="flex gap-2 flex-wrap">
+                <button
+                    @click="fetchNews()"
+                    :disabled="loadingFetch"
+                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <span x-text="loadingFetch ? 'Fetching...' : 'Fetch Latest'"></span>
+                </button>
+                <button
+                    @click="generateSummaries()"
+                    :disabled="loadingSummaries"
+                    class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <span x-text="loadingSummaries ? 'Generating...' : 'Generate Summaries'"></span>
+                </button>
+                <button
+                    @click="createDigest()"
+                    :disabled="loadingDigest"
+                    class="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                    <span x-text="loadingDigest ? 'Creating...' : 'Create Digest'"></span>
+                </button>
+            </div>
+
+            <!-- Success/Error Message -->
+            <div x-show="message" x-transition class="mt-4">
+                <div
+                    :class="messageType === 'success' ? 'bg-green-50 text-green-800 border-green-200' : 'bg-red-50 text-red-800 border-red-200'"
+                    class="px-4 py-3 rounded-lg border flex justify-between items-center"
+                >
+                    <span x-text="message"></span>
+                    <button @click="message = ''" class="text-lg font-bold ml-4">&times;</button>
                 </div>
+            </div>
+        </div>
+    </header>
 
-                <!-- No Digest State -->
-                <div x-show="!digest && !loadingDigest" class="text-center py-20">
-                    <p class="text-gray-400 text-sm">No digest available yet.</p>
-                    <p class="text-gray-400 text-xs mt-2">Click "Create Digest" to generate one.</p>
-                </div>
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
-                <!-- Digest Content -->
-                <div x-show="digest" class="max-w-4xl">
+        <!-- Loading State -->
+        <div x-show="loadingArticles" class="text-center py-20">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="text-gray-500 mt-4">Loading articles...</p>
+        </div>
 
-                    <!-- Breaking News Banner -->
-                    <div class="bg-black text-white px-6 py-4 mb-8">
-                        <div class="text-xs uppercase tracking-wide mb-1">Daily Digest</div>
-                        <div class="text-sm">
-                            <span x-text="digestArticleCount"></span> articles • <span x-text="digestDate"></span>
+        <!-- Priority Section (Breaking News) -->
+        <div x-show="!loadingArticles && breakingNews.length > 0" class="mb-8 animate-slide-in">
+            <div class="flex items-center gap-2 mb-4">
+                <svg class="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                </svg>
+                <h2 class="text-2xl font-bold text-gray-900">Breaking News Today</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <template x-for="article in breakingNews" :key="article.id">
+                    <div @click="openModal(article)" class="breaking-card p-6 rounded-xl text-white cursor-pointer card-hover">
+                        <div class="flex items-start justify-between mb-3">
+                            <span class="text-2xl" x-text="getSentimentEmoji(article)"></span>
+                            <span class="text-xs bg-white/20 px-2 py-1 rounded-full" x-text="formatDate(article.published_date)"></span>
                         </div>
+                        <h3 class="text-lg font-bold mb-2" x-text="article.title"></h3>
+                        <p class="text-sm text-white/90 line-clamp-2" x-text="article.summary || article.content"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Main Articles List -->
+        <div x-show="!loadingArticles" class="space-y-4">
+            <template x-for="article in filteredArticles" :key="article.id">
+                <div @click="openModal(article)" class="bg-white border border-gray-200 rounded-xl p-6 cursor-pointer card-hover animate-slide-in">
+                    <!-- Header: Category Badge + Sentiment + Source -->
+                    <div class="flex items-center gap-3 mb-3">
+                        <span
+                            :class="getCategoryColor(article)"
+                            class="px-3 py-1 rounded-full text-xs font-semibold"
+                            x-text="getCategory(article)"
+                        ></span>
+                        <span class="text-xl" x-text="getSentimentEmoji(article)"></span>
+                        <span class="text-sm text-gray-500" x-text="article.source"></span>
+                        <span class="text-sm text-gray-400">•</span>
+                        <span class="text-sm text-gray-500" x-text="formatDate(article.published_date)"></span>
                     </div>
 
-                    <!-- Digest Sections with Category Colors -->
-                    <div class="prose prose-sm max-w-none">
-                        <div class="digest-content space-y-8" x-html="formatDigestWithCategories(digest)"></div>
+                    <!-- Title -->
+                    <h3 class="text-xl font-bold text-gray-900 mb-3" x-text="article.title"></h3>
+
+                    <!-- Summary -->
+                    <p class="text-gray-700 text-sm leading-relaxed mb-4" x-html="formatMarkdown(article.summary || article.content)"></p>
+
+                    <!-- Key Points Box -->
+                    <div x-show="article.summary" class="bg-blue-50 border-l-4 border-blue-600 p-4 mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span class="text-sm font-semibold text-blue-900">Key Points</span>
+                        </div>
+                        <p class="text-sm text-blue-800" x-html="formatMarkdown(article.summary)"></p>
+                    </div>
+
+                    <!-- Footer: Read Original Link -->
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                        <a
+                            :href="article.link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            @click.stop
+                            class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 transition-colors"
+                        >
+                            Read original article
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                        </a>
                     </div>
                 </div>
-            </div>
+            </template>
 
-        </main>
-
-        <!-- Footer -->
-        <footer class="border-t border-gray-200 mt-12">
-            <div class="max-w-7xl mx-auto px-6 py-6 text-center text-xs text-gray-400">
-                <p>Powered by Claude AI • iGaming News Aggregator © 2025</p>
+            <!-- Empty State -->
+            <div x-show="filteredArticles.length === 0 && !loadingArticles" class="text-center py-20">
+                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <p class="text-gray-500 text-lg font-medium">No articles found</p>
+                <p class="text-gray-400 text-sm mt-2">Try adjusting your filters or click "Fetch Latest" to get new articles</p>
             </div>
-        </footer>
+        </div>
+
+    </main>
+
+    <!-- Article Modal -->
+    <div
+        x-show="selectedArticle"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-50 overflow-y-auto modal-backdrop"
+        @click="closeModal()"
+        style="display: none;"
+    >
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-black bg-opacity-75 transition-opacity"></div>
+
+            <!-- Modal Content -->
+            <div
+                x-show="selectedArticle"
+                @click.stop
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave="transition ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full"
+            >
+                <template x-if="selectedArticle">
+                    <div class="bg-white p-8">
+                        <!-- Close Button -->
+                        <div class="flex justify-end mb-4">
+                            <button @click="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Category Badge + Sentiment -->
+                        <div class="flex items-center gap-3 mb-4">
+                            <span
+                                :class="getCategoryColor(selectedArticle)"
+                                class="px-3 py-1 rounded-full text-xs font-semibold"
+                                x-text="getCategory(selectedArticle)"
+                            ></span>
+                            <span class="text-2xl" x-text="getSentimentEmoji(selectedArticle)"></span>
+                        </div>
+
+                        <!-- Title -->
+                        <h2 class="text-3xl font-bold text-gray-900 mb-4" x-text="selectedArticle.title"></h2>
+
+                        <!-- Meta Info -->
+                        <div class="flex items-center gap-3 mb-6 text-sm text-gray-500">
+                            <span x-text="selectedArticle.source"></span>
+                            <span>•</span>
+                            <span x-text="formatDate(selectedArticle.published_date)"></span>
+                        </div>
+
+                        <!-- Summary -->
+                        <div class="mb-6">
+                            <p class="text-gray-700 leading-relaxed" x-html="formatMarkdown(selectedArticle.summary || selectedArticle.content)"></p>
+                        </div>
+
+                        <!-- Key Points -->
+                        <div x-show="selectedArticle.summary" class="bg-blue-50 border-l-4 border-blue-600 p-6 mb-6">
+                            <div class="flex items-center gap-2 mb-3">
+                                <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="font-semibold text-blue-900">Key Points</span>
+                            </div>
+                            <p class="text-blue-800" x-html="formatMarkdown(selectedArticle.summary)"></p>
+                        </div>
+
+                        <!-- Read Original Button -->
+                        <a
+                            :href="selectedArticle.link"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center font-semibold py-3 rounded-lg transition-colors"
+                        >
+                            Read Original Article →
+                        </a>
+                    </div>
+                </template>
+            </div>
+        </div>
     </div>
 
     <!-- Include Alpine.js app logic -->
