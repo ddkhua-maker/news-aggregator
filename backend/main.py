@@ -23,7 +23,7 @@ from database import get_db, init_db
 from config import CORS_ORIGINS, RSS_FEEDS, DEBUG_MODE
 from models import Article, DigestEntry
 from rss_parser import parse_all_feeds, save_articles_to_db, extract_source_name
-from openai_summarizer import process_new_articles, create_daily_digest
+from openai_summarizer import process_new_articles, create_daily_digest, create_linkedin_article
 from search import semantic_search
 
 # Configure logging
@@ -464,6 +464,58 @@ async def delete_digest(request: Request, digest_date: str, db: Session = Depend
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete digest"
+        )
+
+
+@app.post("/api/generate-article")
+@limiter.limit("10/hour")  # Rate limit: 10 requests per hour
+async def generate_article(request: Request, db: Session = Depends(get_db)):
+    """
+    Generate LinkedIn-style article from today's digest
+
+    Returns:
+        JSON with generated article content
+    """
+    try:
+        # Get today's digest
+        today = date.today()
+        digest = db.query(DigestEntry).filter(
+            DigestEntry.digest_date == today
+        ).first()
+
+        if not digest:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No digest found for today. Please create a digest first."
+            )
+
+        logger.info("Generating LinkedIn article from digest")
+
+        # Generate article using OpenAI
+        article = create_linkedin_article(digest.content)
+
+        logger.info("Successfully generated LinkedIn article")
+
+        # Calculate character count
+        char_count = len(article)
+        word_count = len(article.split())
+
+        return {
+            "status": "success",
+            "article": article,
+            "digest_date": digest.digest_date.isoformat(),
+            "article_count": digest.article_count,
+            "char_count": char_count,
+            "word_count": word_count
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating article: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate article: {str(e)}"
         )
 
 

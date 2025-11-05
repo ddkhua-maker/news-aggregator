@@ -22,6 +22,11 @@ function newsApp() {
         digestDate: '',
         digestArticleCount: 0,
 
+        // State - LinkedIn Article
+        linkedinArticle: '',
+        articleCharCount: 0,
+        articleWordCount: 0,
+
         // State - Modal
         selectedArticle: null,
 
@@ -30,6 +35,7 @@ function newsApp() {
         loadingFetch: false,
         loadingSummaries: false,
         loadingDigest: false,
+        loadingArticle: false,
 
         // Messages
         message: '',
@@ -399,6 +405,63 @@ function newsApp() {
                 .replace(/\n/g, '<br>');
 
             return '<p class="mb-4 text-gray-700 leading-relaxed">' + formatted + '</p>';
+        },
+
+        /**
+         * Generate LinkedIn article from digest
+         */
+        async generateArticle() {
+            this.loadingArticle = true;
+            try {
+                const response = await fetch(`${this.apiUrl}/generate-article`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                this.linkedinArticle = data.article;
+                this.articleCharCount = data.char_count;
+                this.articleWordCount = data.word_count;
+
+                this.showMessage('LinkedIn article generated successfully!', 'success');
+
+                // Scroll to article
+                setTimeout(() => {
+                    document.querySelector('.article-content')?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }, 100);
+
+            } catch (error) {
+                console.error('Error generating article:', error);
+                this.showMessage('Failed to generate article: ' + error.message, 'error');
+            } finally {
+                this.loadingArticle = false;
+            }
+        },
+
+        /**
+         * Copy article to clipboard
+         */
+        async copyArticle() {
+            try {
+                // Remove HTML tags for plain text copy
+                const plainText = this.linkedinArticle
+                    .replace(/\*\*/g, '')  // Remove markdown bold
+                    .replace(/##\s/g, '')  // Remove markdown headers
+                    .replace(/###\s/g, '');
+
+                await navigator.clipboard.writeText(plainText);
+                this.showMessage('Article copied to clipboard!', 'success');
+            } catch (error) {
+                console.error('Error copying article:', error);
+                this.showMessage('Failed to copy article', 'error');
+            }
         }
     };
 }

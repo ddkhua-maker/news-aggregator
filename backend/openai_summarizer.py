@@ -242,6 +242,92 @@ Remember: ALWAYS include the [Read original →](link) after EACH article summar
         raise Exception(f"Failed to create daily digest: {str(e)}")
 
 
+def create_linkedin_article(digest_content: str) -> str:
+    """
+    Generate professional LinkedIn article from daily digest
+
+    Args:
+        digest_content: Daily digest markdown content
+
+    Returns:
+        LinkedIn-ready article text (800-1000 words)
+
+    Raises:
+        Exception: If API call fails or client not initialized
+    """
+    if not client:
+        raise Exception("OpenAI API client not initialized. Please set OPENAI_API_KEY in .env file")
+
+    if not digest_content:
+        logger.warning("No digest content provided for article generation")
+        return "No digest content available for article generation."
+
+    try:
+        logger.info("Generating LinkedIn article from digest")
+
+        # Create prompt for OpenAI
+        prompt = f"""You are a professional iGaming industry journalist writing for LinkedIn.
+
+Transform this daily digest into a comprehensive, engaging LinkedIn article (800-1000 words).
+
+Structure:
+1. **Compelling headline** - Make it attention-grabbing and relevant
+2. **Hook paragraph** - Why this matters to iGaming professionals
+3. **Main story** - Lead with the most important development with context and analysis
+4. **Key developments by category** - Group related news:
+   - Regulations & Compliance
+   - Mergers & Acquisitions
+   - Product Launches & Innovation
+   - Market Expansion & Growth
+5. **Industry implications** - What this means for the sector
+6. **Concluding thoughts** - Forward-looking perspective
+
+Style:
+- Professional but conversational tone
+- Use storytelling and narrative flow
+- Add insights and context beyond the facts
+- Include relevant data/numbers when available
+- Engage the reader with questions or observations
+- Use markdown formatting (**bold** for emphasis, ## for headers)
+
+Digest content:
+{digest_content}
+
+Write a complete LinkedIn article ready to publish. Make it insightful and valuable for industry professionals."""
+
+        # Call OpenAI API
+        response = client.chat.completions.create(
+            model=OPENAI_MODEL,
+            max_tokens=1200,  # Allows ~800-1000 words
+            temperature=0.7,   # Slightly creative for engaging content
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        # Extract article from response
+        article = response.choices[0].message.content
+
+        logger.info("Successfully generated LinkedIn article")
+        return article
+
+    except RateLimitError as e:
+        logger.error(f"Rate limit exceeded: {e}")
+        raise Exception("API rate limit exceeded. Please try again later.")
+    except APIConnectionError as e:
+        logger.error(f"API connection error: {e}")
+        raise Exception("Failed to connect to OpenAI API. Please check your internet connection.")
+    except APIError as e:
+        logger.error(f"OpenAI API error: {e}")
+        raise Exception(f"OpenAI API error: {str(e)}")
+    except Exception as e:
+        logger.error(f"Unexpected error during article generation: {e}")
+        raise Exception(f"Failed to generate article: {str(e)}")
+
+
 def process_new_articles(db_session: Session, limit: int = 50) -> int:
     """
     Process new articles without summaries and generate summaries + embeddings for them

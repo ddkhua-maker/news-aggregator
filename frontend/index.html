@@ -289,12 +289,47 @@
 
         <!-- DIGEST VIEW -->
         <div x-show="currentView === 'digest' && !loadingDigest" class="max-w-4xl mx-auto">
-            <!-- Digest Header -->
-            <div x-show="digest" class="bg-black text-white px-6 py-4 rounded-lg mb-8">
-                <div class="text-xs uppercase tracking-wide mb-1">Daily Digest</div>
-                <div class="text-sm">
-                    <span x-text="digestArticleCount"></span> articles • <span x-text="digestDate"></span>
+            <!-- Digest Header with Generate Article Button -->
+            <div x-show="digest" class="bg-black text-white px-6 py-4 rounded-lg mb-8 flex items-center justify-between">
+                <div>
+                    <div class="text-xs uppercase tracking-wide mb-1">Daily Digest</div>
+                    <div class="text-sm">
+                        <span x-text="digestArticleCount"></span> articles • <span x-text="digestDate"></span>
+                    </div>
                 </div>
+                <button
+                    @click="generateArticle()"
+                    :disabled="loadingArticle"
+                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-purple-400 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                >
+                    <svg x-show="!loadingArticle" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                    </svg>
+                    <svg x-show="loadingArticle" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span x-text="loadingArticle ? 'Generating...' : 'Generate LinkedIn Article'"></span>
+                </button>
+            </div>
+
+            <!-- LinkedIn Article Output -->
+            <div x-show="linkedinArticle" class="mb-8 bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">LinkedIn Article</h3>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-500">
+                            <span x-text="articleWordCount"></span> words • <span x-text="articleCharCount"></span> characters
+                        </span>
+                        <button
+                            @click="copyArticle()"
+                            class="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition-colors"
+                        >
+                            📋 Copy
+                        </button>
+                    </div>
+                </div>
+                <div class="prose prose-sm max-w-none article-content" x-html="formatDigestContent(linkedinArticle)"></div>
             </div>
 
             <!-- Digest Content -->
