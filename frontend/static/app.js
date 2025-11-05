@@ -139,9 +139,16 @@ function newsApp() {
         getCategory(article) {
             const text = `${article.title} ${article.summary || article.content || ''}`.toLowerCase();
 
+            // Regulation & Compliance
             if (text.match(/regulat|compliance|licens|legal|law|legislat/)) return 'Regulation';
-            if (text.match(/merger|acquisition|acquir|deal|partnership|agreement/)) return 'M&A';
+
+            // M&A - Enhanced with more keywords
+            if (text.match(/merger|acquisition|acquir|deal|partnership|partner(s)? with|joint venture|stake|investment|invest(s)? in|buyout|takeover/)) return 'M&A';
+
+            // Product & Innovation
             if (text.match(/product|launch|release|platform|game|slot|casino/)) return 'Product';
+
+            // Market & Business
             if (text.match(/market|expansion|growth|revenue|earnings/)) return 'Market';
 
             return 'General';
