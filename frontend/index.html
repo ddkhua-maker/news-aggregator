@@ -157,7 +157,7 @@
                     :disabled="loadingFetch"
                     class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                    <span x-text="loadingFetch ? 'Fetching articles and generating summaries...' : 'Fetch Latest'"></span>
+                    <span x-text="loadingFetch ? 'Fetching latest articles...' : 'Fetch Latest'"></span>
                 </button>
                 <button
                     @click="createDigest()"

@@ -183,41 +183,24 @@ function newsApp() {
         },
 
         /**
-         * Fetch latest news from RSS feeds and auto-generate summaries
+         * Fetch latest news from RSS feeds (fast - no summary generation)
          */
         async fetchNews() {
             this.loadingFetch = true;
             try {
-                // Step 1: Fetch news
-                const fetchResponse = await fetch(`${this.apiUrl}/fetch-news`, {
+                const response = await fetch(`${this.apiUrl}/fetch-news`, {
                     method: 'POST'
                 });
 
-                if (!fetchResponse.ok) {
-                    throw new Error(`HTTP ${fetchResponse.status}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
-                const fetchData = await fetchResponse.json();
-                const newArticles = fetchData.new_articles;
+                const data = await response.json();
+                const newArticles = data.new_articles;
 
                 if (newArticles > 0) {
-                    // Step 2: Auto-generate summaries for new articles
-                    const summaryResponse = await fetch(`${this.apiUrl}/generate-summaries`, {
-                        method: 'POST'
-                    });
-
-                    if (summaryResponse.ok) {
-                        const summaryData = await summaryResponse.json();
-                        this.showMessage(
-                            `Fetched ${newArticles} new articles and generated ${summaryData.summaries_generated} summaries!`,
-                            'success'
-                        );
-                    } else {
-                        this.showMessage(
-                            `Fetched ${newArticles} new articles (summaries generation failed)`,
-                            'success'
-                        );
-                    }
+                    this.showMessage(`Fetched ${newArticles} new articles!`, 'success');
                 } else {
                     this.showMessage('No new articles found', 'success');
                 }
