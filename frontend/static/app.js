@@ -102,9 +102,25 @@ function newsApp() {
             // Filter by category
             if (this.selectedCategory !== 'all') {
                 filtered = filtered.filter(article => {
-                    const category = this.getCategory(article).toLowerCase();
-                    return category === this.selectedCategory ||
-                           (this.selectedCategory === 'breaking' && this.isBreakingNews(article));
+                    // Special case for breaking news
+                    if (this.selectedCategory === 'breaking') {
+                        return this.isBreakingNews(article);
+                    }
+
+                    // Get article category and normalize for comparison
+                    const articleCategory = this.getCategory(article).toLowerCase();
+
+                    // Map button values to category values
+                    const categoryMap = {
+                        'regulation': 'regulation',
+                        'merger': 'm&a',  // Button uses 'merger' but category is 'M&A'
+                        'product': 'product',
+                        'market': 'market',
+                        'general': 'general'
+                    };
+
+                    const normalizedSelected = categoryMap[this.selectedCategory] || this.selectedCategory;
+                    return articleCategory === normalizedSelected;
                 });
             }
 
