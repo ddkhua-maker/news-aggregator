@@ -180,33 +180,38 @@ Summary: {article.summary or article.content[:200] if article.content else 'No c
         articles_text = "\n".join(formatted_articles)
 
         # Create prompt for OpenAI
-        prompt = f"""You are an iGaming industry analyst. Create a professional daily digest from these news articles.
+        prompt = f"""You are writing a daily news digest for iGaming professionals. Keep it conversational, relaxed, and easy to read - like you're explaining to a colleague over coffee.
 
-For EACH article you discuss:
+IMPORTANT: Maximum 3000 characters (with spaces). Keep it concise!
+
+Writing style:
+- Use simple, everyday words (not academic jargon)
+- Write like you're talking to a friend
+- Be direct and clear
+- Skip unnecessary words
+
+For EACH article:
 1. Write the title in **bold**
-2. Add a brief 1-2 sentence summary
-3. IMMEDIATELY after the summary, add a new line with: [Read original →](article-link)
+2. Add 1-2 short sentences explaining what happened and why it matters
+3. Add: [Read original →](article-link)
 
-Group articles by topics (regulations, M&A, product launches, markets, technology).
+Group by topics: Regulations, M&A, Products, Markets
 
-Format example:
-**Article Title Here**
-Brief 1-2 sentence summary of the article content and key points.
+Example:
+**Company X Partners with Company Y**
+These two are teaming up to launch a new sports betting platform in Brazil. Could be a game-changer for the Latin American market.
 [Read original →](https://example.com/article)
 
-**Another Article Title**
-Another brief summary here.
-[Read original →](https://example.com/article2)
-
-Articles to include:
+Articles:
 {articles_text}
 
-Remember: ALWAYS include the [Read original →](link) after EACH article summary."""
+Remember: Stay under 3000 characters total, conversational tone, include all links."""
 
         # Call OpenAI API
         response = client.chat.completions.create(
             model=OPENAI_MODEL,
-            max_tokens=4000,
+            max_tokens=1200,  # Reduced from 4000 to enforce 3000 char limit (~800 words)
+            temperature=0.7,  # Slightly more conversational
             messages=[
                 {
                     "role": "user",
